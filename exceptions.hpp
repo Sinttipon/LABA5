@@ -12,19 +12,26 @@ public:
 class IndexOutOfRange : public DataStructureException
 {
 public:
-    
-    IndexOutOfRange(int index, int size, const std::string &context)
+    IndexOutOfRange(size_t index, size_t size, const std::string &context)
         : DataStructureException(buildMessage(index, size, context)),
           index(index), size(size) {}
-   
-    int getIndex() const noexcept { return index; }
-    int getSize() const noexcept { return size; }
+
+    size_t getIndex() const noexcept { return index; }
+    size_t getSize() const noexcept { return size; }
 
 private:
-    static std::string buildMessage(int index, int size, const std::string &context)
+    static std::string buildMessage(size_t index, size_t size, const std::string &context)
     {
+        if (size == 0)
+        {
+            return "IndexOutOfRange in " + context + ": index " +
+                   std::to_string(index) + " is out of bounds for empty sequence";
+        }
+        return "IndexOutOfRange in " + context + ": index " +
+               std::to_string(index) + " is out of bounds [0, " +
+               std::to_string(size - 1) + "]";
     }
 
-    int index = 0;
-    int size = 0;
+    size_t index = 0;
+    size_t size = 0;
 };

@@ -1,90 +1,117 @@
 #pragma once
 #include "exceptions.hpp"
-#include <algorithm>
+#include <algorithm> 
+#include <cstddef>   
 
 template <typename T>
 class DynamicArray
 {
 private:
     T *data;
-    int size;
-
-    void CopyFrom(const T *source, int count)
-    {
-        for (int i = 0; i < count; ++i)
-            data[i] = source[i];
-    }
-
+    size_t size; 
 public:
-    DynamicArray(T *items, int count) : size(count)
+    DynamicArray() : data{nullptr}, size{0} {}
+
+    explicit DynamicArray(size_t n) : size{n}
     {
-        if (count < 0)
-            throw IndexOutOfRange("Negative count in DynamicArray");
-        data = (count > 0) ? new T[count] : nullptr;
-        if (count > 0)
-            CopyFrom(items, count);
+        if (n == 0)
+        {
+            data = nullptr;
+        }
+        else
+        {
+            data = new T[n];
+        }
     }
 
-    explicit DynamicArray(int size) : size(size)
+    DynamicArray(const T *items, size_t n) : size{n}
     {
-        if (size < 0)
-            throw IndexOutOfRange("Negative size in DynamicArray");
-        data = (size > 0) ? new T[size]() : nullptr;
+        if (n == 0)
+        {
+            data = nullptr;
+        }
+        else
+        {
+            data = new T[n];
+            std::copy(items, items + n, data);
+        }
     }
 
-    DynamicArray(const DynamicArray<T> &other) : size(other.size)
+    DynamicArray(const DynamicArray &other) : size{other.size}
     {
-        data = (size > 0) ? new T[size] : nullptr;
-        if (size > 0)
-            CopyFrom(other.data, size);
+        if (size == 0)
+        {
+            data = nullptr;
+        }
+        else
+        {
+            data = new T[size];
+            std::copy(other.data, other.data + size, data);
+        }
     }
 
-    ~DynamicArray() { delete[] data; }
-
-    DynamicArray<T> &operator=(const DynamicArray<T> &other)
+    ~DynamicArray()
     {
-        if (this == &other)
-            return *this;
         delete[] data;
-        size = other.size;
-        data = (size > 0) ? new T[size] : nullptr;
-        if (size > 0)
-            CopyFrom(other.data, size);
+    }
+
+    DynamicArray &operator=(const DynamicArray &other)
+    {
+        if (this != &other)
+        {
+            delete[] data;
+            size = other.size;
+            if (size == 0)
+            {
+                data = nullptr;
+            }
+            else
+            {
+                data = new T[size];
+                std::copy(other.data, other.data + size, data);
+            }
+        }
         return *this;
     }
 
-    T Get(int index)
+    T Get(size_t index) const
     {
-        if (index < 0 || index >= size)
-            throw IndexOutOfRange("Index out of range in DynamicArray::Get");
+        if (index >= size)
+        {
+            throw IndexOutOfRange(static_cast<int>(index), static_cast<int>(size), "DynamicArray::Get");
+        }
         return data[index];
     }
 
-    int GetSize()
+    void Set(size_t index, const T &value)
+    {
+        if (index >= size)
+        {
+            throw IndexOutOfRange(static_cast<int>(index), static_cast<int>(size), "DynamicArray::Set");
+        }
+        data[index] = value;
+    }
+
+    size_t GetSize() const
     {
         return size;
     }
 
-    void Set(int index, T value)
+    void Resize(size_t newSize)
     {
-        if (index < 0 || index >= size)
-            throw IndexOutOfRange("Index out of range in DynamicArray::Set");
-        data[index] = value;
-    }
-
-    void Resize(int newSize)
-    {
-        if (newSize < 0)
-            throw IndexOutOfRange("Negative newSize in DynamicArray::Resize");
         if (newSize == size)
             return;
 
-        T *newData = (newSize > 0) ? new T[newSize]() : nullptr;
-        int copyCount = (newSize < size) ? newSize : size;
+        T *newData = nullptr;
+        if (newSize > 0)
+        {
+            newData = new T[newSize];
+        }
+
+        size_t copyCount = (newSize < size) ? newSize : size;
         if (copyCount > 0 && data != nullptr)
         {
-            for (int i = 0; i < copyCount; ++i)
-                newData[i] = data[i];
+            std::copy(data, data + copyCount, newData);
         }
 
         delete[] data;
@@ -92,11 +119,23 @@ public:
         size = newSize;
     }
 
-    T &operator[](int index) { return Get(index); }
-    const T &operator[](int index) const
+    T &operator[](size_t index)
     {
-        if (index < 0 || index >= size)
-            throw IndexOutOfRange("Index out of range in operator[]");
+        if (index >= size)
+            throw IndexOutOfRange(static_cast<int>(index), static_cast<int>(size), "operator[]");
         return data[index];
     }
+
+    const T &operator[](size_t index) const
+    {
+        if (index >= size)
+            throw IndexOutOfRange(static_cast<int>(index), static_cast<int>(size), "operator[] const");
+        return data[index];
+    }
+
+    T *begin() { return data; }
+    T *end() { return data + size; }
+
+    const T *begin() const { return data; }
+    const T *end() const { return data + size; }
 };

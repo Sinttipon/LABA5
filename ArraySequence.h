@@ -10,7 +10,7 @@ protected:
     DynamicArray<T> *items;
 
     BaseArraySequence() : items(new DynamicArray<T>()) {}
-    BaseArraySequence(T *itemsArr, int count) : items(new DynamicArray<T>(itemsArr, count)) {}
+    BaseArraySequence(T *itemsArr, size_t count) : items(new DynamicArray<T>(itemsArr, count)) {}
     BaseArraySequence(const DynamicArray<T> &arr) : items(new DynamicArray<T>(arr)) {}
     BaseArraySequence(const BaseArraySequence<T> &other) : items(new DynamicArray<T>(*other.items)) {}
 
@@ -22,35 +22,45 @@ protected:
     T GetFirst() const override
     {
         if (items->GetSize() == 0)
-            throw IndexOutOfRange("GetFirst on empty ArraySequence");
+            throw IndexOutOfRange(0, 0, "GetFirst on empty ArraySequence");
         return items->Get(0);
     }
 
     T GetLast() const override
     {
         if (items->GetSize() == 0)
-            throw IndexOutOfRange("GetLast on empty ArraySequence");
+            throw IndexOutOfRange(0, 0, "GetLast on empty ArraySequence");
         return items->Get(items->GetSize() - 1);
     }
 
-    T Get(int index) const override { return items->Get(index); }
-    int GetLength() const override { return items->GetSize(); }
+    T Get(size_t index) const override { return items->Get(index); }
+    size_t GetLength() const override { return items->GetSize(); }
 
-    Sequence<T> *GetSubsequence(int startIndex, int endIndex) const override
+    Sequence<T> *GetSubsequence(size_t startIndex, size_t endIndex) const override
     {
-        if (startIndex < 0 || endIndex >= items->GetSize() || startIndex > endIndex)
+        if (startIndex > endIndex || endIndex >= items->GetSize())
         {
             throw IndexOutOfRange(startIndex, items->GetSize(), "ArraySequence::GetSubsequence");
         }
 
-        int subSize = endIndex - startIndex + 1;
+        size_t subSize = endIndex - startIndex + 1;
         T *subArr = new T[subSize];
-        for (int i = 0; i < subSize; ++i)
+        for (size_t i = 0; i < subSize; ++i)
         {
             subArr[i] = items->Get(startIndex + i);
         }
 
-        BaseArraySequence<T> *result = new BaseArraySequence<T>(subArr, subSize);
+        Sequence<T> *result;
+
+        if (dynamic_cast<const MutableArraySequence<T> *>(this))
+        {
+            result = new MutableArraySequence<T>(subArr, subSize);
+        }
+        else
+        {
+            result = new ImmutableArraySequence<T>(subArr, subSize);
+        }
+
         delete[] subArr;
         return result;
     }
@@ -65,18 +75,18 @@ protected:
     BaseArraySequence<T> *PrependInternal(const T &item)
     {
         items->Resize(items->GetSize() + 1);
-        for (int i = items->GetSize() - 1; i > 0; --i)
+        for (size_t i = items->GetSize() - 1; i > 0; --i)
             items->Set(i, items->Get(i - 1));
         items->Set(0, item);
         return this;
     }
 
-    BaseArraySequence<T> *InsertAtInternal(const T &item, int index)
+    BaseArraySequence<T> *InsertAtInternal(const T &item, size_t index)
     {
-        if (index < 0 || index > items->GetSize())
+        if (index > items->GetSize())
             throw IndexOutOfRange(index, items->GetSize() + 1, "ArraySequence::InsertAt");
         items->Resize(items->GetSize() + 1);
-        for (int i = items->GetSize() - 1; i > index; --i)
+        for (size_t i = items->GetSize() - 1; i > index; --i)
             items->Set(i, items->Get(i - 1));
         items->Set(index, item);
         return this;
@@ -86,10 +96,10 @@ protected:
     {
         if (!other)
             return this;
-        int otherLen = other->GetLength();
-        int startLen = items->GetSize();
+        size_t otherLen = other->GetLength();
+        size_t startLen = items->GetSize();
         items->Resize(startLen + otherLen);
-        for (int i = 0; i < otherLen; ++i)
+        for (size_t i = 0; i < otherLen; ++i)
             items->Set(startLen + i, other->Get(i));
         return this;
     }
@@ -104,7 +114,7 @@ protected:
         return static_cast<BaseArraySequence<T> *>(Instance())->PrependInternal(item);
     }
 
-    Sequence<T> *InsertAt(const T &item, int index) const override
+    Sequence<T> *InsertAt(const T &item, size_t index) const override
     {
         return static_cast<BaseArraySequence<T> *>(Instance())->InsertAtInternal(item, index);
     }
@@ -117,11 +127,21 @@ protected:
     template <typename TOut>
     Sequence<TOut> *Map(std::function<TOut(const T &)> func) const override
     {
-        int len = GetLength();
+        size_t len = GetLength();
         TOut *newArr = new TOut[len];
-        for (int i = 0; i < len; ++i)
+        for (size_t i = 0; i < len; ++i)
             newArr[i] = func(Get(i));
-        BaseArraySequence<TOut> *res = new BaseArraySequence<TOut>(newArr, len);
+
+        Sequence<TOut> *res;
+        if (dynamic_cast<const MutableArraySequence<T> *>(this))
+        {
+            res = new MutableArraySequence<TOut>(newArr, len);
+        }
+        else
+        {
+            res = new ImmutableArraySequence<TOut>(newArr, len);
+        }
+
         delete[] newArr;
         return res;
     }
@@ -129,7 +149,7 @@ protected:
     Sequence<T> *Where(std::function<bool(const T &)> predicate) const override
     {
         DynamicArray<T> *temp = new DynamicArray<T>();
-        for (int i = 0; i < GetLength(); ++i)
+        for (size_t i = 0; i < GetLength(); ++i)
         {
             if (predicate(Get(i)))
             {
@@ -137,7 +157,19 @@ protected:
                 temp->Set(temp->GetSize() - 1, Get(i));
             }
         }
-        Sequence<T> *result = new BaseArraySequence<T>(*temp);
+
+        Sequence<T> *result;
+
+        if (dynamic_cast<const MutableArraySequence<T> *>(this))
+        {
+            result = new MutableArraySequence<T>(*temp);
+        }
+        else
+        {
+            result = new ImmutableArraySequence<T>(*temp);
+        }
+
+        delete temp;
         return result;
     }
 
@@ -145,7 +177,7 @@ protected:
     TAcc Reduce(std::function<TAcc(const TAcc &, const T &)> func, const TAcc &init) const override
     {
         TAcc acc = init;
-        for (int i = 0; i < GetLength(); ++i)
+        for (size_t i = 0; i < GetLength(); ++i)
             acc = func(acc, Get(i));
         return acc;
     }
