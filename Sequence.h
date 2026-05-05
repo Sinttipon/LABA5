@@ -28,7 +28,4 @@ public:
     template <typename TAcc>
     virtual TAcc Reduce(std::function<TAcc(const TAcc &, const T &)> func, const TAcc &init) const = 0;
 
-protected:
-    virtual Sequence<T> *Instance() const = 0;
-    virtual Sequence<T> *Clone() const = 0;
 };

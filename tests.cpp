@@ -2,6 +2,7 @@
 
 #include "DynamicArray.hpp"
 #include "LinkedList.hpp"
+#include "BitSequence.h"
 #include "Option.hpp"
 #include "exceptions.hpp"
 
@@ -502,6 +503,88 @@ void TestLinkedList_Iterator()
             *it = *it * 10;
         CHECK(l.Get(0) == 10);
         CHECK(l.Get(2) == 30);
+    }
+    ENDTEST();
+}
+
+static void BitSequence_GetOperations()
+{
+    std::cout << "\nBitSequence Get" << std::endl;
+
+    TEST("GetFirst непустой")
+    {
+        bool src[] = {true, false, true};
+        BitSequence bs(src, 3);
+        CHECK(bs.GetFirst() == Bit(true));
+    }
+    ENDTEST();
+
+    TEST("GetFirst пустой")
+    {
+        BitSequence bs;
+        CHECK_THROW(bs.GetFirst(), IndexOutOfRange);
+    }
+    ENDTEST();
+
+    TEST("GetLast непустой")
+    {
+        bool src[] = {true, false, false};
+        BitSequence bs(src, 3);
+        CHECK(bs.GetLast() == Bit(false));
+    }
+    ENDTEST();
+
+    TEST("GetLast пустой")
+    {
+        BitSequence bs;
+        CHECK_THROW(bs.GetLast(), IndexOutOfRange);
+    }
+    ENDTEST();
+
+    TEST("Get")
+    {
+        bool src[] = {true, false, true};
+        BitSequence bs(src, 3);
+        CHECK(bs.Get(0) == Bit(true));
+    }
+    ENDTEST();
+
+    TEST("Get за границами")
+    {
+        bool src[] = {true, false};
+        BitSequence bs(src, 2);
+        CHECK_THROW(bs.Get(5), IndexOutOfRange);
+    }
+    ENDTEST();
+
+    TEST("Get пустой")
+    {
+        BitSequence bs;
+        CHECK_THROW(bs.Get(0), IndexOutOfRange);
+    }
+    ENDTEST();
+
+    TEST("GetLength непустой")
+    {
+        bool src[] = {true, false, true, true};
+        BitSequence bs(src, 4);
+        CHECK(bs.GetLength() == 4);
+    }
+    ENDTEST();
+
+    TEST("GetLength пустой")
+    {
+        BitSequence bs;
+        CHECK(bs.GetLength() == 0);
+    }
+    ENDTEST();
+
+    TEST("GetFirst и GetLast на единичный")
+    {
+        bool src[] = {true};
+        BitSequence bs(src, 1);
+        CHECK(bs.GetFirst() == bs.GetLast());
+        CHECK(bs.GetLast() == Bit(true));
     }
     ENDTEST();
 }
