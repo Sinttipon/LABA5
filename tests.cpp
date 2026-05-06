@@ -588,3 +588,234 @@ static void BitSequence_GetOperations()
     }
     ENDTEST();
 }
+
+void TestBitSequence_Subsequence()
+{
+    TEST("полная последовательность")
+    {
+        bool src[] = {true, false, true, false};
+        BitSequence bs(src, 4);
+        Sequence<Bit> *sub = bs.GetSubsequence(0, 3);
+
+        CHECK(sub->GetLength() == 4);
+        CHECK(sub->Get(0) == Bit(true));
+        CHECK(sub->Get(1) == Bit(false));
+        CHECK(sub->Get(2) == Bit(true));
+        CHECK(sub->Get(3) == Bit(false));
+
+        delete sub;
+    }
+    ENDTEST();
+
+    TEST("часть последовательности")
+    {
+        bool src[] = {true, false, true, false, true};
+        BitSequence bs(src, 5);
+        Sequence<Bit> *sub = bs.GetSubsequence(1, 3);
+
+        CHECK(sub->GetLength() == 3);
+        CHECK(sub->Get(0) == Bit(false));
+        CHECK(sub->Get(1) == Bit(true));
+        CHECK(sub->Get(2) == Bit(false));
+
+        delete sub;
+    }
+    ENDTEST();
+
+    TEST("один элемент")
+    {
+        bool src[] = {true, false, true};
+        BitSequence bs(src, 3);
+        Sequence<Bit> *sub = bs.GetSubsequence(1, 1);
+
+        CHECK(sub->GetLength() == 1);
+        CHECK(sub->Get(0) == Bit(false));
+
+        delete sub;
+    }
+    ENDTEST();
+
+    TEST("ошибка индексации")
+    {
+        bool src[] = {true, false, true};
+        BitSequence bs(src, 3);
+        CHECK_THROW(bs.GetSubsequence(2, 1), IndexOutOfRange);
+    }
+    ENDTEST();
+
+    TEST("за границами")
+    {
+        bool src[] = {true, false};
+        BitSequence bs(src, 2);
+        CHECK_THROW(bs.GetSubsequence(0, 5), IndexOutOfRange);
+    }
+    ENDTEST();
+
+    TEST("пустая")
+    {
+        BitSequence bs;
+        CHECK_THROW(bs.GetSubsequence(0, 0), IndexOutOfRange);
+    }
+    ENDTEST();
+}
+
+void TestBitSequence_Append()
+{
+    TEST("добавление в конец")
+    {
+        bool src[] = {true, false};
+        BitSequence bs(src, 2);
+        Sequence<Bit> *newBs = bs.Append(Bit(true));
+
+        CHECK(bs.GetLength() == 2);
+        CHECK(newBs->GetLength() == 3);
+        CHECK(newBs->Get(0) == Bit(true));
+        CHECK(newBs->Get(1) == Bit(false));
+        CHECK(newBs->Get(2) == Bit(true));
+
+        delete newBs;
+    }
+    ENDTEST();
+
+    TEST("добавление к пустой")
+    {
+        BitSequence bs;
+        Sequence<Bit> *newBs = bs.Append(Bit(false));
+
+        CHECK(newBs->GetLength() == 1);
+        CHECK(newBs->Get(0) == Bit(false));
+
+        delete newBs;
+    }
+    ENDTEST();
+}
+
+void TestBitSequence_Prepend()
+{
+    TEST("добавление в начало")
+    {
+        bool src[] = {false, true};
+        BitSequence bs(src, 2);
+        Sequence<Bit> *newBs = bs.Prepend(Bit(true));
+
+        CHECK(bs.GetLength() == 2);
+        CHECK(newBs->GetLength() == 3);
+        CHECK(newBs->Get(0) == Bit(true));  
+        CHECK(newBs->Get(1) == Bit(false)); 
+        CHECK(newBs->Get(2) == Bit(true));  
+
+        delete newBs;
+    }
+    ENDTEST();
+
+    TEST("добавление к пустой")
+    {
+        BitSequence bs;
+        Sequence<Bit> *newBs = bs.Prepend(Bit(true));
+
+        CHECK(newBs->GetLength() == 1);
+        CHECK(newBs->Get(0) == Bit(true));
+
+        delete newBs;
+    }
+    ENDTEST();
+}
+
+void TestBitSequence_InsertAt()
+{
+    TEST("вставка в середину")
+    {
+        bool src[] = {true, false, true}; 
+        BitSequence bs(src, 3);
+        Sequence<Bit> *newBs = bs.InsertAt(Bit(false), 1);
+
+        CHECK(bs.GetLength() == 3); 
+        CHECK(newBs->GetLength() == 4);
+        CHECK(newBs->Get(0) == Bit(true));
+        CHECK(newBs->Get(1) == Bit(false)); 
+        CHECK(newBs->Get(2) == Bit(false)); 
+        CHECK(newBs->Get(3) == Bit(true));
+
+        delete newBs;
+    }
+    ENDTEST();
+
+    TEST("вставка в начало")
+    {
+        bool src[] = {false, true};
+        BitSequence bs(src, 2);
+        Sequence<Bit> *newBs = bs.InsertAt(Bit(true), 0);
+
+        CHECK(newBs->GetLength() == 3);
+        CHECK(newBs->Get(0) == Bit(true));
+        CHECK(newBs->Get(1) == Bit(false));
+        CHECK(newBs->Get(2) == Bit(true));
+
+        delete newBs;
+    }
+    ENDTEST();
+
+    TEST("вставка в конец")
+    {
+        bool src[] = {true, false};
+        BitSequence bs(src, 2);
+        Sequence<Bit> *newBs = bs.InsertAt(Bit(true), 2);
+
+        CHECK(newBs->GetLength() == 3);
+        CHECK(newBs->Get(0) == Bit(true));
+        CHECK(newBs->Get(1) == Bit(false));
+        CHECK(newBs->Get(2) == Bit(true));
+
+        delete newBs;
+    }
+    ENDTEST();
+
+    TEST("за границами")
+    {
+        bool src[] = {true, false};
+        BitSequence bs(src, 2);
+        CHECK_THROW(bs.InsertAt(Bit(true), 3), IndexOutOfRange);
+    }
+    ENDTEST();
+}
+
+void RunAllTests()
+{
+    std::cout << "tests running" << std::endl;
+    int testsPassed;
+    int testsFailed;
+    testsPassed = 0;
+    testsFailed = 0;
+
+    TestDynamicArray_Construction();
+    TestDynamicArray_GetSet();
+    TestDynamicArray_Resize();
+    TestDynamicArray_OperatorBracket();
+    TestDynamicArray_Assignment();
+    TestDynamicArray_Iterators();
+
+    TestLinkedList_Construction();
+    TestLinkedList_GetOperations();
+    TestLinkedList_AddOperations();
+    TestLinkedList_GetSubList();
+    TestLinkedList_Concat();
+    TestLinkedList_OperatorBracket();
+    TestLinkedList_Assignment();
+    TestLinkedList_Iterator();
+
+    BitSequence_GetOperations();
+    TestBitSequence_Subsequence();
+    TestBitSequence_Append();
+    TestBitSequence_Prepend();
+    TestBitSequence_InsertAt();
+
+    std::cout << "   РЕЗУЛЬТАТЫ ТЕСТИРОВАНИЯ" << std::endl;
+    std::cout << "Пройдено: " << testsPassed << std::endl;
+    std::cout << "Не пройдено: " << testsFailed << std::endl;
+    std::cout << "Всего: " << (testsPassed + testsFailed) << std::endl;
+
+    if (testsFailed == 0)
+        std::cout << "\nВСЕ ТЕСТЫ ПРОЙДЕНЫ УСПЕШНО!" << std::endl;
+    else
+        std::cout << "\nЕСТЬ НЕПРОЙДЕННЫЕ ТЕСТЫ!" << std::endl;
+}

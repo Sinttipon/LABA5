@@ -59,10 +59,52 @@ public:
     Bit Get(size_t index) const override { return bits->Get(index); }
     size_t GetLength() const override { return bits->GetSize(); }
 
-    Sequence<Bit> *GetSubsequence(size_t, size_t) const override { throw std::runtime_error("."); }
-    Sequence<Bit> *Append(const Bit &) const override { throw std::runtime_error("."); }
-    Sequence<Bit> *Prepend(const Bit &) const override { throw std::runtime_error("."); }
-    Sequence<Bit> *InsertAt(const Bit &, size_t) const override { throw std::runtime_error("."); }
+    Sequence<Bit> *GetSubsequence(size_t startIndex, size_t endIndex) const override
+    {
+        if (startIndex > endIndex || endIndex >= bits->GetSize())
+            throw IndexOutOfRange(startIndex, bits->GetSize(), "BitSequence::GetSubsequence");
+
+        size_t subSize = endIndex - startIndex + 1;
+        bool *subArr = new bool[subSize];
+        for (size_t i = 0; i < subSize; ++i)
+            subArr[i] = bits->Get(startIndex + i);
+        Sequence<Bit> *result = new BitSequence(subArr, subSize);
+        delete[] subArr;
+        return result;
+    }
+
+    Sequence<Bit> *Append(const Bit &item) const override
+    {
+        BitSequence *copy = new BitSequence(*this);
+        copy->bits->Resize(copy->bits->GetSize() + 1);
+        copy->bits->Set(copy->bits->GetSize() - 1, item);
+        return copy;
+    }
+
+    Sequence<Bit> *Prepend(const Bit &item) const override
+    {
+        BitSequence *copy = new BitSequence(*this);
+        size_t oldSize = copy->bits->GetSize();
+        copy->bits->Resize(oldSize + 1);
+        for (size_t i = oldSize; i > 0; --i)
+            copy->bits->Set(i, copy->bits->Get(i - 1));
+        copy->bits->Set(0, item);
+        return copy;
+    }
+
+    Sequence<Bit> *InsertAt(const Bit &item, size_t index) const override
+    {
+        if (index > bits->GetSize())
+            throw IndexOutOfRange(index, bits->GetSize() + 1, "BitSequence::InsertAt");
+        BitSequence *copy = new BitSequence(*this);
+        size_t oldSize = copy->bits->GetSize();
+        copy->bits->Resize(oldSize + 1);
+        for (size_t i = oldSize; i > index; --i)
+            copy->bits->Set(i, copy->bits->Get(i - 1));
+        copy->bits->Set(index, item);
+        return copy;
+    }
+
     Sequence<Bit> *Concat(const Sequence<Bit> *) const override { throw std::runtime_error("."); }
     Sequence<Bit> *Where(std::function<bool(const Bit &)>) const override { throw std::runtime_error("."); }
 };
