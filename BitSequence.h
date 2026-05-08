@@ -105,6 +105,34 @@ public:
         return copy;
     }
 
-    Sequence<Bit> *Concat(const Sequence<Bit> *) const override { throw std::runtime_error("."); }
-    Sequence<Bit> *Where(std::function<bool(const Bit &)>) const override { throw std::runtime_error("."); }
+    Sequence<Bit> *Concat(const Sequence<Bit> *other) const override
+    {
+        if (!other)
+            return new BitSequence(*this);
+        BitSequence *result = new BitSequence(*this);
+        size_t oldSize = result->bits->GetSize();
+        size_t otherLen = other->GetLength();
+        result->bits->Resize(oldSize + otherLen);
+        for (size_t i = 0; i < otherLen; ++i)
+            result->bits->Set(oldSize + i, other->Get(i));
+        return result;
+    }
+
+    Sequence<Bit> *Where(std::function<bool(const Bit &)> predicate) const override
+    {
+        DynamicArray<Bit> *temp = new DynamicArray<Bit>();
+        for (size_t i = 0; i < bits->GetSize(); ++i)
+        {
+            if (predicate(bits->Get(i)))
+            {
+                temp->Resize(temp->GetSize() + 1);
+                temp->Set(temp->GetSize() - 1, bits->Get(i));
+            }
+        }
+        BitSequence *result = new BitSequence();
+        delete result->bits;
+        result->bits = temp;
+        return result;
+    }
+
 };

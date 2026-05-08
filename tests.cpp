@@ -507,7 +507,7 @@ void TestLinkedList_Iterator()
     ENDTEST();
 }
 
-static void BitSequence_GetOperations()
+void TestBitSequence_GetOperations()
 {
     std::cout << "\nBitSequence Get" << std::endl;
 
@@ -779,6 +779,159 @@ void TestBitSequence_InsertAt()
     ENDTEST();
 }
 
+void TestBitSequence_Where()
+{
+    TEST("Where true")
+    {
+        bool src[] = {true, false, true, false, true};
+        BitSequence bs(src, 5);
+        Sequence<Bit> *result = bs.Where([](const Bit &x)
+            { return x == Bit(true); });
+        CHECK(result->GetLength() == 3);
+        CHECK(result->Get(0) == Bit(true));
+        CHECK(result->Get(1) == Bit(true));
+        CHECK(result->Get(2) == Bit(true));
+        delete result;
+    }
+    ENDTEST();
+
+    TEST("Where false")
+    {
+        bool src[] = {true, false, true, false};
+        BitSequence bs(src, 4);
+        Sequence<Bit> *result = bs.Where([](const Bit &x)
+            { return x == Bit(false); });
+        CHECK(result->GetLength() == 2);
+        CHECK(result->Get(0) == Bit(false));
+        CHECK(result->Get(1) == Bit(false));
+        delete result;
+    }
+    ENDTEST();
+
+    TEST("нет совпадений")
+    {
+        bool src[] = {false, false, false};
+        BitSequence bs(src, 3);
+        Sequence<Bit> *result = bs.Where([](const Bit &x)
+            { return x == Bit(true); });
+        CHECK(result->GetLength() == 0);
+        delete result;
+    }
+    ENDTEST();
+
+    TEST("все совпадения")
+    {
+        bool src[] = {true, true, true};
+        BitSequence bs(src, 3);
+        Sequence<Bit> *result = bs.Where([](const Bit &x)
+            { return x == Bit(true); });
+        CHECK(result->GetLength() == 3);
+        delete result;
+    }
+    ENDTEST();
+
+    TEST("пустая")
+    {
+        BitSequence bs;
+        Sequence<Bit> *result = bs.Where([](const Bit &x)
+            { return x == Bit(true); });
+        CHECK(result->GetLength() == 0);
+        delete result;
+    }
+    ENDTEST();
+
+    TEST("не меняет исходную")
+    {
+        bool src[] = {true, false, true};
+        BitSequence bs(src, 3);
+        Sequence<Bit> *result = bs.Where([](const Bit &x)
+            { return x == Bit(true); });
+        CHECK(bs.GetLength() == 3);
+        CHECK(bs.Get(0) == Bit(true));
+        delete result;
+    }
+    ENDTEST();
+}
+
+void TestBitSequence_Concat()
+{
+    TEST("дефолт")
+    {
+        bool s1[] = {true, false};
+        bool s2[] = {true, true};
+        BitSequence a(s1, 2);
+        BitSequence b(s2, 2);
+        Sequence<Bit> *result = a.Concat(&b);
+        CHECK(a.GetLength() == 2);
+        CHECK(result->GetLength() == 4);
+        CHECK(result->Get(0) == Bit(true));
+        CHECK(result->Get(1) == Bit(false));
+        CHECK(result->Get(2) == Bit(true));
+        CHECK(result->Get(3) == Bit(true));
+        delete result;
+    }
+    ENDTEST();
+
+    TEST("c пустой")
+    {
+        bool src[] = {true, false};
+        BitSequence a(src, 2);
+        BitSequence b;
+        Sequence<Bit> *result = a.Concat(&b);
+        CHECK(result->GetLength() == 2);
+        CHECK(result->Get(0) == Bit(true));
+        CHECK(result->Get(1) == Bit(false));
+        delete result;
+    }
+    ENDTEST();
+
+    TEST("пустая c непустой")
+    {
+        BitSequence a;
+        bool src[] = {true, false};
+        BitSequence b(src, 2);
+        Sequence<Bit> *result = a.Concat(&b);
+        CHECK(result->GetLength() == 2);
+        CHECK(result->Get(0) == Bit(true));
+        CHECK(result->Get(1) == Bit(false));
+        delete result;
+    }
+    ENDTEST();
+
+    TEST("две пустых")
+    {
+        BitSequence a, b;
+        Sequence<Bit> *result = a.Concat(&b);
+        CHECK(result->GetLength() == 0);
+        delete result;
+    }
+    ENDTEST();
+
+    TEST("с nullptr")
+    {
+        bool src[] = {true};
+        BitSequence a(src, 1);
+        Sequence<Bit> *result = a.Concat(nullptr);
+        CHECK(result->GetLength() == 1);
+        CHECK(result->Get(0) == Bit(true));
+        delete result;
+    }
+    ENDTEST();
+
+    TEST("не меняет исходные")
+    {
+        bool s1[] = {true};
+        bool s2[] = {false, true};
+        BitSequence a(s1, 1);
+        BitSequence b(s2, 2);
+        Sequence<Bit> *result = a.Concat(&b);
+        CHECK(a.GetLength() == 1);
+        CHECK(b.GetLength() == 2);
+        delete result;
+    }
+    ENDTEST();
+}
+
 void RunAllTests()
 {
     std::cout << "tests running" << std::endl;
@@ -803,13 +956,15 @@ void RunAllTests()
     TestLinkedList_Assignment();
     TestLinkedList_Iterator();
 
-    BitSequence_GetOperations();
+    TestBitSequence_GetOperations();
     TestBitSequence_Subsequence();
     TestBitSequence_Append();
     TestBitSequence_Prepend();
     TestBitSequence_InsertAt();
+    TestBitSequence_Where();
+    TestBitSequence_Concat();
 
-    std::cout << "   РЕЗУЛЬТАТЫ ТЕСТИРОВАНИЯ" << std::endl;
+    std::cout<< "   РЕЗУЛЬТАТЫ ТЕСТИРОВАНИЯ" << std::endl;
     std::cout << "Пройдено: " << testsPassed << std::endl;
     std::cout << "Не пройдено: " << testsFailed << std::endl;
     std::cout << "Всего: " << (testsPassed + testsFailed) << std::endl;
