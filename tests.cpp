@@ -2136,17 +2136,17 @@ void RunAllTests()
     TestBitSequence_Xor();
     TestBitSequence_Not();
 
-    TestListSequence_GetOperations;
-    TestListSequence_GetSubsequence;
-    TestListSequence_Append;
-    TestListSequence_Prepend;
-    TestListSequence_InsertAt;
-    TestListSequence_Concat;
-    TestListSequence_Where;
-    TestListSequence_Map;
-    TestListSequence_Reduce;
-    TestListSequence_Split;
-    TestListSequence_Slice;
+    TestListSequence_GetOperations();
+    TestListSequence_GetSubsequence();
+    TestListSequence_Append();
+    TestListSequence_Prepend();
+    TestListSequence_InsertAt();
+    TestListSequence_Concat();
+    TestListSequence_Where();
+    TestListSequence_Map();
+    TestListSequence_Reduce();
+    TestListSequence_Split();
+    TestListSequence_Slice();
 
     std::cout<< "   РЕЗУЛЬТАТЫ ТЕСТИРОВАНИЯ" << std::endl;
     std::cout << "Пройдено: " << testsPassed << std::endl;
