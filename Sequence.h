@@ -1,6 +1,8 @@
 #pragma once
 #include <functional>
+#include <string>
 #include "exceptions.hpp"
+#include "Option.hpp"
 
 template <typename T>
 class Sequence
@@ -20,12 +22,52 @@ public:
     virtual Sequence<T> *InsertAt(const T &item, size_t index) const = 0;
     virtual Sequence<T> *Concat(const Sequence<T> *other) const = 0;
 
-    template <typename TOut>
-    virtual Sequence<TOut> *Map(std::function<TOut(const T &)> func) const = 0;
-
     virtual Sequence<T> *Where(std::function<bool(const T &)> predicate) const = 0;
 
-    template <typename TAcc>
-    virtual TAcc Reduce(std::function<TAcc(const TAcc &, const T &)> func, const TAcc &init) const = 0;
+    Option<T> TryGetFirst() const
+    {
+        try
+        {
+            return Option<T>(GetFirst());
+        }
+        catch (...)
+        {
+            return Option<T>::None();
+        }
+    }
 
+    Option<T> TryGetLast() const
+    {
+        try
+        {
+            return Option<T>(GetLast());
+        }
+        catch (...)
+        {
+            return Option<T>::None();
+        }
+    }
+
+    Option<T> TryGet(size_t index) const
+    {
+        try
+        {
+            return Option<T>(Get(index));
+        }
+        catch (...)
+        {
+            return Option<T>::None();
+        }
+    }
+
+    Option<T> TryFind(std::function<bool(const T &)> predicate) const
+    {
+        for (size_t i = 0; i < GetLength(); ++i)
+        {
+            T val = Get(i);
+            if (predicate(val))
+                return Option<T>(val);
+        }
+        return Option<T>::None();
+    }
 };
