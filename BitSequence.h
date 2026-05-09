@@ -134,5 +134,90 @@ public:
         result->bits = temp;
         return result;
     }
+    template <typename TOut>
+    Sequence<TOut> *Map(std::function<TOut(const Bit &)> func) const
+    {
+        size_t len = bits->GetSize();
+        TOut *newArr = new TOut[len];
+        for (size_t i = 0; i < len; ++i)
+            newArr[i] = func(bits->Get(i));
+        Sequence<TOut> *res = new MutableArraySequence<TOut>(newArr, len);
+        delete[] newArr;
+        return res;
+    }
 
+    template <typename TAcc>
+    TAcc Reduce(std::function<TAcc(const TAcc &, const Bit &)> func, const TAcc &init) const
+    {
+        TAcc acc = init;
+        for (size_t i = 0; i < bits->GetSize(); ++i)
+            acc = func(acc, bits->Get(i));
+        return acc;
+    }
+
+    BitSequence *And(const BitSequence &other) const
+    {
+        size_t minLen = bits->GetSize() < other.bits->GetSize() ? bits->GetSize() : other.bits->GetSize();
+        BitSequence *result = new BitSequence();
+        for (size_t i = 0; i < minLen; ++i)
+        {
+            Bit b = bits->Get(i) & other.bits->Get(i);
+            result->bits->Resize(result->bits->GetSize() + 1);
+            result->bits->Set(result->bits->GetSize() - 1, b);
+        }
+        return result;
+    }
+
+    BitSequence *Or(const BitSequence &other) const
+    {
+        size_t minLen = bits->GetSize() < other.bits->GetSize() ? bits->GetSize() : other.bits->GetSize();
+        BitSequence *result = new BitSequence();
+        for (size_t i = 0; i < minLen; ++i)
+        {
+            Bit b = bits->Get(i) | other.bits->Get(i);
+            result->bits->Resize(result->bits->GetSize() + 1);
+            result->bits->Set(result->bits->GetSize() - 1, b);
+        }
+        return result;
+    }
+
+    BitSequence *Xor(const BitSequence &other) const
+    {
+        size_t minLen = bits->GetSize() < other.bits->GetSize() ? bits->GetSize() : other.bits->GetSize();
+        BitSequence *result = new BitSequence();
+        for (size_t i = 0; i < minLen; ++i)
+        {
+            Bit b = bits->Get(i) ^ other.bits->Get(i);
+            result->bits->Resize(result->bits->GetSize() + 1);
+            result->bits->Set(result->bits->GetSize() - 1, b);
+        }
+        return result;
+    }
+
+    BitSequence *Not() const
+    {
+        BitSequence *result = new BitSequence();
+        for (size_t i = 0; i < bits->GetSize(); ++i)
+        {
+            Bit b = ~bits->Get(i);
+            result->bits->Resize(result->bits->GetSize() + 1);
+            result->bits->Set(result->bits->GetSize() - 1, b);
+        }
+        return result;
+    }
+
+    std::string ToString() const
+    {
+        std::string s;
+        for (size_t i = 0; i < bits->GetSize(); ++i)
+            s += bits->Get(i).ToString();
+        return s;
+    }
+
+    void Set(size_t index, Bit value)
+    {
+        if (index >= bits->GetSize())
+            throw IndexOutOfRange(index, bits->GetSize(), "BitSequence::Set");
+        bits->Set(index, value);
+    }
 };

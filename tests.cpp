@@ -932,6 +932,548 @@ void TestBitSequence_Concat()
     ENDTEST();
 }
 
+void TestBitSequence_Map()
+{
+    TEST("Map в Bit инверсия")
+    {
+        bool src[] = {true, false, true};
+        BitSequence bs(src, 3);
+        Sequence<Bit> *result = bs.Map<Bit>([](const Bit &x)
+            { return ~x; });
+        CHECK(result->GetLength() == 3);
+        CHECK(result->Get(0) == Bit(false));
+        CHECK(result->Get(1) == Bit(true));
+        CHECK(result->Get(2) == Bit(false));
+        delete result;
+    }
+    ENDTEST();
+
+    TEST("Map в Bit всё в true")
+    {
+        bool src[] = {true, false, true};
+        BitSequence bs(src, 3);
+        Sequence<Bit> *result = bs.Map<Bit>([](const Bit &x)
+            { return Bit(true); });
+        CHECK(result->GetLength() == 3);
+        CHECK(result->Get(0) == Bit(true));
+        CHECK(result->Get(1) == Bit(true));
+        CHECK(result->Get(2) == Bit(true));
+        delete result;
+    }
+    ENDTEST();
+
+    TEST("Map в int 1 и 0")
+    {
+        bool src[] = {true, false, true};
+        BitSequence bs(src, 3);
+        Sequence<int> *result = bs.Map<int>([](const Bit &x)
+            { return x == Bit(true) ? 1 : 0; });
+        CHECK(result->GetLength() == 3);
+        CHECK(result->Get(0) == 1);
+        CHECK(result->Get(1) == 0);
+        CHECK(result->Get(2) == 1);
+        delete result;
+    }
+    ENDTEST();
+
+    TEST("Map в string")
+    {
+        bool src[] = {true, false};
+        BitSequence bs(src, 2);
+        Sequence<std::string> *result = bs.Map<std::string>([](const Bit &x)
+            { return x == Bit(true) ? "yes" : "no"; });
+        CHECK(result->GetLength() == 2);
+        CHECK(result->Get(0) == "yes");
+        CHECK(result->Get(1) == "no");
+        delete result;
+    }
+    ENDTEST();
+
+    TEST("Map пустая в Bit")
+    {
+        BitSequence bs;
+        Sequence<Bit> *result = bs.Map<Bit>([](const Bit &x)
+            { return ~x; });
+        CHECK(result->GetLength() == 0);
+        delete result;
+    }
+    ENDTEST();
+
+    TEST("Map пустая в int")
+    {
+        BitSequence bs;
+        Sequence<int> *result = bs.Map<int>([](const Bit &x)
+            { return 42; });
+        CHECK(result->GetLength() == 0);
+        delete result;
+    }
+    ENDTEST();
+
+    TEST("Map не меняет исходную")
+    {
+        bool src[] = {true, false, true};
+        BitSequence bs(src, 3);
+        Sequence<Bit> *result = bs.Map<Bit>([](const Bit &x)
+            { return ~x; });
+        CHECK(bs.GetLength() == 3);
+        CHECK(bs.Get(0) == Bit(true));
+        CHECK(bs.Get(1) == Bit(false));
+        CHECK(bs.Get(2) == Bit(true));
+        delete result;
+    }
+    ENDTEST();
+
+    TEST("Map один элемент")
+    {
+        bool src[] = {true};
+        BitSequence bs(src, 1);
+        Sequence<int> *result = bs.Map<int>([](const Bit &x)
+            { return 99; });
+        CHECK(result->GetLength() == 1);
+        CHECK(result->Get(0) == 99);
+        delete result;
+    }
+    ENDTEST();
+}
+
+void TestBitSequence_Reduce()
+{
+    TEST("AND все true")
+    {
+        bool src[] = {true, true, true};
+        BitSequence bs(src, 3);
+        Bit result = bs.Reduce<Bit>([](const Bit &a, const Bit &x)
+            { return a & x; }, Bit(true));
+        CHECK(result == Bit(true));
+    }
+    ENDTEST();
+
+    TEST("AND есть false")
+    {
+        bool src[] = {true, false, true};
+        BitSequence bs(src, 3);
+        Bit result = bs.Reduce<Bit>([](const Bit &a, const Bit &x)
+            { return a & x; }, Bit(true));
+        CHECK(result == Bit(false));
+    }
+    ENDTEST();
+
+    TEST("OR есть true")
+    {
+        bool src[] = {false, false, true};
+        BitSequence bs(src, 3);
+        Bit result = bs.Reduce<Bit>([](const Bit &a, const Bit &x)
+            { return a | x; }, Bit(false));
+        CHECK(result == Bit(true));
+    }
+    ENDTEST();
+
+    TEST("OR все false")
+    {
+        bool src[] = {false, false, false};
+        BitSequence bs(src, 3);
+        Bit result = bs.Reduce<Bit>([](const Bit &a, const Bit &x)
+            { return a | x; }, Bit(false));
+        CHECK(result == Bit(false));
+    }
+    ENDTEST();
+
+    TEST("int подсчёт true")
+    {
+        bool src[] = {true, false, true, true, false};
+        BitSequence bs(src, 5);
+        int count = bs.Reduce<int>([](const int &a, const Bit &x)
+            { return a + (x == Bit(true) ? 1 : 0); }, 0);
+        CHECK(count == 3);
+    }
+    ENDTEST();
+
+    TEST("int подсчёт false")
+    {
+        bool src[] = {true, false, true, false};
+        BitSequence bs(src, 4);
+        int count = bs.Reduce<int>([](const int &a, const Bit &x)
+            { return a + (x == Bit(false) ? 1 : 0); }, 0);
+        CHECK(count == 2);
+    }
+    ENDTEST();
+
+    TEST("int сумма 1/0")
+    {
+        bool src[] = {true, false, true};
+        BitSequence bs(src, 3);
+        int sum = bs.Reduce<int>([](const int &a, const Bit &x)
+            { return a + (x == Bit(true) ? 1 : 0); }, 0);
+        CHECK(sum == 2);
+    }
+    ENDTEST();
+
+    TEST("пустая Bit возвращает init")
+    {
+        BitSequence bs;
+        Bit result = bs.Reduce<Bit>([](const Bit &a, const Bit &x)
+            { return a | x; }, Bit(false));
+        CHECK(result == Bit(false));
+    }
+    ENDTEST();
+
+    TEST("пустая int возвращает init")
+    {
+        BitSequence bs;
+        int result = bs.Reduce<int>([](const int &a, const Bit &x)
+            { return a + 1; }, 100);
+        CHECK(result == 100);
+    }
+    ENDTEST();
+
+    TEST("один элемент")
+    {
+        bool src[] = {true};
+        BitSequence bs(src, 1);
+        int result = bs.Reduce<int>([](const int &a, const Bit &x)
+            { return a + (x == Bit(true) ? 1 : 0); }, 0);
+        CHECK(result == 1);
+    }
+    ENDTEST();
+
+    TEST("XOR всех")
+    {
+        bool src[] = {true, true, false, false};
+        BitSequence bs(src, 4);
+        Bit result = bs.Reduce<Bit>([](const Bit &a, const Bit &x)
+            { return a ^ x; }, Bit(false));
+        CHECK(result == Bit(false));
+    }
+    ENDTEST();
+
+    TEST("не меняет исходную")
+    {
+        bool src[] = {true, false, true};
+        BitSequence bs(src, 3);
+        int result = bs.Reduce<int>([](const int &a, const Bit &x)
+            { return a + 1; }, 0);
+        CHECK(bs.GetLength() == 3);
+        CHECK(bs.Get(0) == Bit(true));
+        CHECK(result == 3);
+    }
+    ENDTEST();
+}
+
+void TestBitSequence_And()
+{
+    TEST("And одинаковая длина")
+    {
+        bool s1[] = {true, true, false, false};
+        bool s2[] = {true, false, true, false};
+        BitSequence a(s1, 4), b(s2, 4);
+        BitSequence *r = a.And(b);
+        CHECK(r->GetLength() == 4);
+        CHECK(r->Get(0) == Bit(true));
+        CHECK(r->Get(1) == Bit(false));
+        CHECK(r->Get(2) == Bit(false));
+        CHECK(r->Get(3) == Bit(false));
+        CHECK(r->ToString() == "1000");
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("And все true")
+    {
+        bool s1[] = {true, true, true};
+        bool s2[] = {true, true, true};
+        BitSequence a(s1, 3), b(s2, 3);
+        BitSequence *r = a.And(b);
+        CHECK(r->ToString() == "111");
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("And разная длина")
+    {
+        bool s1[] = {true, false};
+        bool s2[] = {true, true, false};
+        BitSequence a(s1, 2), b(s2, 3);
+        BitSequence *r = a.And(b);
+        CHECK(r->GetLength() == 2);
+        CHECK(r->Get(0) == Bit(true));
+        CHECK(r->Get(1) == Bit(false));
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("And пустая и непустая")
+    {
+        bool s2[] = {true, false};
+        BitSequence a, b(s2, 2);
+        BitSequence *r = a.And(b);
+        CHECK(r->GetLength() == 0);
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("And обе пустые")
+    {
+        BitSequence a, b;
+        BitSequence *r = a.And(b);
+        CHECK(r->GetLength() == 0);
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("And не меняет исходные")
+    {
+        bool s1[] = {true, false};
+        bool s2[] = {true, true};
+        BitSequence a(s1, 2), b(s2, 2);
+        BitSequence *r = a.And(b);
+        CHECK(a.GetLength() == 2);
+        CHECK(a.Get(0) == Bit(true));
+        CHECK(a.Get(1) == Bit(false));
+        CHECK(b.GetLength() == 2);
+        CHECK(b.Get(0) == Bit(true));
+        CHECK(b.Get(1) == Bit(true));
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("And один элемент")
+    {
+        bool s1[] = {true};
+        bool s2[] = {false};
+        BitSequence a(s1, 1), b(s2, 1);
+        BitSequence *r = a.And(b);
+        CHECK(r->GetLength() == 1);
+        CHECK(r->Get(0) == Bit(false));
+        delete r;
+    }
+    ENDTEST();
+}
+
+void TestBitSequence_Or()
+{
+    TEST("Or одинаковая длина")
+    {
+        bool s1[] = {true, true, false, false};
+        bool s2[] = {true, false, true, false};
+        BitSequence a(s1, 4), b(s2, 4);
+        BitSequence *r = a.Or(b);
+        CHECK(r->GetLength() == 4);
+        CHECK(r->Get(0) == Bit(true));
+        CHECK(r->Get(1) == Bit(true));
+        CHECK(r->Get(2) == Bit(true));
+        CHECK(r->Get(3) == Bit(false));
+        CHECK(r->ToString() == "1110");
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("Or все true")
+    {
+        bool s1[] = {true, true};
+        bool s2[] = {false, false};
+        BitSequence a(s1, 2), b(s2, 2);
+        BitSequence *r = a.Or(b);
+        CHECK(r->ToString() == "11");
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("Or смешанные")
+    {
+        bool s1[] = {true, false};
+        bool s2[] = {false, true};
+        BitSequence a(s1, 2), b(s2, 2);
+        BitSequence *r = a.Or(b);
+        CHECK(r->ToString() == "11");
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("Or разная длина")
+    {
+        bool s1[] = {true};
+        bool s2[] = {false, true};
+        BitSequence a(s1, 1), b(s2, 2);
+        BitSequence *r = a.Or(b);
+        CHECK(r->GetLength() == 1);
+        CHECK(r->Get(0) == Bit(true));
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("Or пустые")
+    {
+        BitSequence a, b;
+        BitSequence *r = a.Or(b);
+        CHECK(r->GetLength() == 0);
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("Or не меняет исходные")
+    {
+        bool s1[] = {true, false};
+        bool s2[] = {false, false};
+        BitSequence a(s1, 2), b(s2, 2);
+        BitSequence *r = a.Or(b);
+        CHECK(a.Get(0) == Bit(true));
+        CHECK(b.Get(1) == Bit(false));
+        delete r;
+    }
+    ENDTEST();
+}
+
+void TestBitSequence_Xor()
+{
+
+    TEST("Xor одинаковая длина")
+    {
+        bool s1[] = {true, true, false, false};
+        bool s2[] = {true, false, true, false};
+        BitSequence a(s1, 4), b(s2, 4);
+        BitSequence *r = a.Xor(b);
+        CHECK(r->GetLength() == 4);
+        CHECK(r->Get(0) == Bit(false));
+        CHECK(r->Get(1) == Bit(true));
+        CHECK(r->Get(2) == Bit(true));
+        CHECK(r->Get(3) == Bit(false));
+        CHECK(r->ToString() == "0110");
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("Xor одинаковые дают 0")
+    {
+        bool s1[] = {true, false, true};
+        bool s2[] = {true, false, true};
+        BitSequence a(s1, 3), b(s2, 3);
+        BitSequence *r = a.Xor(b);
+        CHECK(r->ToString() == "000");
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("Xor противоположные дают 1")
+    {
+        bool s1[] = {true, false, true};
+        bool s2[] = {false, true, false};
+        BitSequence a(s1, 3), b(s2, 3);
+        BitSequence *r = a.Xor(b);
+        CHECK(r->ToString() == "111");
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("Xor все true")
+    {
+        bool s1[] = {true, true};
+        bool s2[] = {true, true};
+        BitSequence a(s1, 2), b(s2, 2);
+        BitSequence *r = a.Xor(b);
+        CHECK(r->ToString() == "00");
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("Xor разная длина")
+    {
+        bool s1[] = {true, false, true};
+        bool s2[] = {false, true};
+        BitSequence a(s1, 3), b(s2, 2);
+        BitSequence *r = a.Xor(b);
+        CHECK(r->GetLength() == 2);
+        CHECK(r->Get(0) == Bit(true));
+        CHECK(r->Get(1) == Bit(true));
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("Xor пустые")
+    {
+        BitSequence a, b;
+        BitSequence *r = a.Xor(b);
+        CHECK(r->GetLength() == 0);
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("Xor не меняет исходные")
+    {
+        bool s1[] = {true, false};
+        bool s2[] = {false, true};
+        BitSequence a(s1, 2), b(s2, 2);
+        BitSequence *r = a.Xor(b);
+        CHECK(a.GetLength() == 2);
+        CHECK(b.GetLength() == 2);
+        delete r;
+    }
+    ENDTEST();
+}
+
+void TestBitSequence_Not()
+{
+    TEST("Not смешанные")
+    {
+        bool src[] = {true, false, true, false};
+        BitSequence bs(src, 4);
+        BitSequence *r = bs.Not();
+        CHECK(r->GetLength() == 4);
+        CHECK(r->Get(0) == Bit(false));
+        CHECK(r->Get(1) == Bit(true));
+        CHECK(r->Get(2) == Bit(false));
+        CHECK(r->Get(3) == Bit(true));
+        CHECK(r->ToString() == "0101");
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("Not все true")
+    {
+        bool src[] = {true, true, true};
+        BitSequence bs(src, 3);
+        BitSequence *r = bs.Not();
+        CHECK(r->ToString() == "000");
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("Not пустая")
+    {
+        BitSequence bs;
+        BitSequence *r = bs.Not();
+        CHECK(r->GetLength() == 0);
+        CHECK(r->ToString() == "");
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("Not не меняет исходную")
+    {
+        bool src[] = {true, false};
+        BitSequence bs(src, 2);
+        BitSequence *r = bs.Not();
+        CHECK(bs.GetLength() == 2);
+        CHECK(bs.Get(0) == Bit(true));
+        CHECK(bs.Get(1) == Bit(false));
+        delete r;
+    }
+    ENDTEST();
+
+    TEST("Not дважды")
+    {
+        bool src[] = {true, false, true};
+        BitSequence bs(src, 3);
+        BitSequence *r1 = bs.Not();
+        BitSequence *r2 = r1->Not();
+        CHECK(r2->ToString() == bs.ToString());
+        delete r1;
+        delete r2;
+    }
+    ENDTEST();
+}
+
+
+
 void RunAllTests()
 {
     std::cout << "tests running" << std::endl;
@@ -963,6 +1505,12 @@ void RunAllTests()
     TestBitSequence_InsertAt();
     TestBitSequence_Where();
     TestBitSequence_Concat();
+    TestBitSequence_Map();
+    TestBitSequence_Reduce();
+    TestBitSequence_And();
+    TestBitSequence_Or();
+    TestBitSequence_Xor();
+    TestBitSequence_Not();
 
     std::cout<< "   РЕЗУЛЬТАТЫ ТЕСТИРОВАНИЯ" << std::endl;
     std::cout << "Пройдено: " << testsPassed << std::endl;
