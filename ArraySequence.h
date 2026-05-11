@@ -23,14 +23,14 @@ public:
     T GetFirst() const override
     {
         if (items.GetSize() == 0)
-            throw IndexOutOfRange(0, 0, "GetFirst on empty ArraySequence");
+            throw IndexOutOfRange(0, 0, "GetFirst в пустом ArraySequence");
         return items.Get(0);
     }
 
     T GetLast() const override
     {
         if (items.GetSize() == 0)
-            throw IndexOutOfRange(0, 0, "GetLast on empty ArraySequence");
+            throw IndexOutOfRange(0, 0, "GetLast в пустом ArraySequence");
         return items.Get(items.GetSize() - 1);
     }
 
@@ -133,7 +133,7 @@ public:
         if (realIndex < 0)
             realIndex = static_cast<int>(len) + realIndex;
         if (realIndex < 0 || static_cast<size_t>(realIndex) > len)
-            throw IndexOutOfRange(realIndex, len, "Slice: index out of range");
+            throw IndexOutOfRange(realIndex, len, "Slice: индекс за границами");
 
         size_t idx = static_cast<size_t>(realIndex);
         T *tmp = new T[len + (s ? s->GetLength() : 0)];

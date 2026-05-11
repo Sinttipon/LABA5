@@ -23,14 +23,14 @@ public:
     T GetFirst() const override
     {
         if (items.GetLength() == 0)
-            throw IndexOutOfRange(0, 0, "GetFirst on empty ListSequence");
+            throw IndexOutOfRange(0, 0, "GetFirst в пустом ListSequence");
         return items.GetFirst();
     }
 
     T GetLast() const override
     {
         if (items.GetLength() == 0)
-            throw IndexOutOfRange(0, 0, "GetLast on empty ListSequence");
+            throw IndexOutOfRange(0, 0, "GetLast в пустом ListSequence");
         return items.GetLast();
     }
 
@@ -144,7 +144,7 @@ public:
         if (realIndex < 0)
             realIndex = static_cast<int>(len) + realIndex;
         if (realIndex < 0 || static_cast<size_t>(realIndex) > len)
-            throw IndexOutOfRange(realIndex, len, "Slice: index out of range");
+            throw IndexOutOfRange(realIndex, len, "Slice: индекс за границами");
 
         size_t idx = static_cast<size_t>(realIndex);
         Sequence<T> *result = static_cast<Sequence<T> *>(new MutableListSequence<T>());

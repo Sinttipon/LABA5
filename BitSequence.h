@@ -58,14 +58,14 @@ public:
     Bit GetFirst() const override
     {
         if (bitLength == 0)
-            throw IndexOutOfRange(0, 0, "GetFirst on empty BitSequence");
+            throw IndexOutOfRange(0, 0, "GetFirst в пустом BitSequence");
         return Get(0);
     }
 
     Bit GetLast() const override
     {
         if (bitLength == 0)
-            throw IndexOutOfRange(0, 0, "GetLast on empty BitSequence");
+            throw IndexOutOfRange(0, 0, "GetLast в пустом BitSequence");
         return Get(bitLength - 1);
     }
 

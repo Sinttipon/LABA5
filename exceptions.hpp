@@ -24,11 +24,11 @@ private:
     {
         if (size == 0)
         {
-            return "IndexOutOfRange in " + context + ": index " +
-                   std::to_string(index) + " is out of bounds for empty sequence";
+            return "IndexOutOfRange в " + context + ": индекс " +
+                   std::to_string(index) + " за пределами";
         }
-        return "IndexOutOfRange in " + context + ": index " +
-               std::to_string(index) + " is out of bounds [0, " +
+        return "IndexOutOfRange в " + context + ": индекс " +
+               std::to_string(index) + " за пределами [0, " +
                std::to_string(size - 1) + "]";
     }
 
