@@ -12,43 +12,38 @@ template <typename T>
 class BaseListSequence : public Sequence<T>
 {
 protected:
-    LinkedList<T> *items;
+    LinkedList<T> items;
 
-    BaseListSequence() : items(new LinkedList<T>()) {}
-    BaseListSequence(T *itemsArr, size_t count) : items(new LinkedList<T>(itemsArr, count)) {}
-    BaseListSequence(const LinkedList<T> &list) : items(new LinkedList<T>(list)) {}
-    BaseListSequence(const BaseListSequence<T> &other) : items(new LinkedList<T>(*other.items)) {}
-
-    ~BaseListSequence() override
-    {
-        delete items;
-    }
+    BaseListSequence() {}
+    BaseListSequence(T *itemsArr, size_t count) : items(itemsArr, count) {}
+    BaseListSequence(const LinkedList<T> &list) : items(list) {}
+    BaseListSequence(const BaseListSequence<T> &other) : items(other.items) {}
 
 public:
     T GetFirst() const override
     {
-        if (items->GetLength() == 0)
+        if (items.GetLength() == 0)
             throw IndexOutOfRange(0, 0, "GetFirst on empty ListSequence");
-        return items->GetFirst();
+        return items.GetFirst();
     }
 
     T GetLast() const override
     {
-        if (items->GetLength() == 0)
+        if (items.GetLength() == 0)
             throw IndexOutOfRange(0, 0, "GetLast on empty ListSequence");
-        return items->GetLast();
+        return items.GetLast();
     }
 
-    T Get(size_t index) const override { return items->Get(index); }
-    size_t GetLength() const override { return items->GetLength(); }
+    T Get(size_t index) const override { return items.Get(index); }
+    size_t GetLength() const override { return items.GetLength(); }
 
     Sequence<T> *GetSubsequence(size_t startIndex, size_t endIndex) const override
     {
-        size_t len = items->GetLength();
+        size_t len = items.GetLength();
         if (startIndex > endIndex || endIndex >= len)
             throw IndexOutOfRange(startIndex, len, "ListSequence::GetSubsequence");
 
-        LinkedList<T> *subList = items->GetSubList(startIndex, endIndex);
+        LinkedList<T> *subList = items.GetSubList(startIndex, endIndex);
         Sequence<T> *result;
         if (dynamic_cast<const MutableListSequence<T> *>(this))
             result = new MutableListSequence<T>(*subList);
@@ -80,19 +75,18 @@ public:
 
     Sequence<T> *Where(std::function<bool(const T &)> predicate) const override
     {
-        LinkedList<T> *temp = new LinkedList<T>();
+        LinkedList<T> temp;
         for (size_t i = 0; i < GetLength(); ++i)
         {
             T val = Get(i);
             if (predicate(val))
-                temp->Append(val);
+                temp.Append(val);
         }
         Sequence<T> *result;
         if (dynamic_cast<const MutableListSequence<T> *>(this))
-            result = new MutableListSequence<T>(*temp);
+            result = new MutableListSequence<T>(temp);
         else
-            result = new ImmutableListSequence<T>(*temp);
-        delete temp;
+            result = new ImmutableListSequence<T>(temp);
         return result;
     }
 
@@ -116,7 +110,6 @@ public:
                     Sequence<Sequence<T> *> *tmpRes = result->Append(part);
                     delete result;
                     result = static_cast<MutableArraySequence<Sequence<T> *> *>(tmpRes);
-
                     delete current;
                     current = new MutableListSequence<T>();
                 }
@@ -135,7 +128,6 @@ public:
                 buf[j] = current->Get(j);
             ImmutableListSequence<T> *part = new ImmutableListSequence<T>(buf, current->GetLength());
             delete[] buf;
-
             Sequence<Sequence<T> *> *tmpRes = result->Append(part);
             delete result;
             result = static_cast<MutableArraySequence<Sequence<T> *> *>(tmpRes);
@@ -198,22 +190,22 @@ public:
 protected:
     BaseListSequence<T> *AppendInternal(const T &item)
     {
-        items->Append(item);
+        items.Append(item);
         return this;
     }
 
     BaseListSequence<T> *PrependInternal(const T &item)
     {
-        items->Prepend(item);
+        items.Prepend(item);
         return this;
     }
 
     BaseListSequence<T> *InsertAtInternal(const T &item, size_t index)
     {
-        size_t len = items->GetLength();
+        size_t len = items.GetLength();
         if (index > len)
             throw IndexOutOfRange(index, len + 1, "ListSequence::InsertAt");
-        items->InsertAt(item, index);
+        items.InsertAt(item, index);
         return this;
     }
 
@@ -222,7 +214,7 @@ protected:
         if (!other)
             return this;
         for (size_t i = 0; i < other->GetLength(); ++i)
-            items->Append(other->Get(i));
+            items.Append(other->Get(i));
         return this;
     }
 
