@@ -7,16 +7,20 @@
 #include "Option.hpp"
 #include "exceptions.hpp"
 
-static int testsPassed = 0;
 static int testsFailed = 0;
 
-#define TEST(name)                                 \
-    do                                             \
-    {                                              \
-        std::cout << "  Тест: " << name << "... "; \
+#define TEST(name)                                    \
+    do                                                \
+    {                                                 \
+        std::cout << "  Тест: " << name << std::endl; \
         try
 
 #define ENDTEST()                                                       \
+    catch (const MYException &e)                                        \
+    {                                                                   \
+        std::cout << "НЕ ПРОЙДЕН: " << e.whatErr() << std::endl;        \
+        ++testsFailed;                                                  \
+    }                                                                   \
     catch (const std::exception &e)                                     \
     {                                                                   \
         std::cout << "НЕ ПРОЙДЕН: " << e.what() << std::endl;           \
@@ -30,36 +34,35 @@ static int testsFailed = 0;
     }                                                                   \
     while (0)
 
-#define CHECK(cond)                                                   \
-    do                                                                \
-    {                                                                 \
-        if (!(cond))                                                  \
-        {                                                             \
-            throw std::runtime_error("Проверка не пройдена: " #cond); \
-        }                                                             \
+#define CHECK(cond)                                                    \
+    do                                                                 \
+    {                                                                  \
+        if (!(cond))                                                   \
+        {                                                              \
+            throw TestFailedException("Проверка не пройдена: " #cond); \
+        }                                                              \
     } while (0)
 
-#define CHECK_THROW(expr, exc_type)                                                              \
-    do                                                                                           \
-    {                                                                                            \
-        bool caught = false;                                                                     \
-        try                                                                                      \
-        {                                                                                        \
-            expr;                                                                                \
-        }                                                                                        \
-        catch (const exc_type &)                                                                 \
-        {                                                                                        \
-            caught = true;                                                                       \
-        }                                                                                        \
-        catch (...)                                                                              \
-        {                                                                                        \
-        }                                                                                        \
-        if (!caught)                                                                             \
-        {                                                                                        \
-            throw std::runtime_error("Ожидалось исключение " #exc_type ", но оно не выброшено"); \
-        }                                                                                        \
+#define CHECK_THROW(expr, exc_type)                                                               \
+    do                                                                                            \
+    {                                                                                             \
+        bool caught = false;                                                                      \
+        try                                                                                       \
+        {                                                                                         \
+            expr;                                                                                 \
+        }                                                                                         \
+        catch (const exc_type &)                                                                  \
+        {                                                                                         \
+            caught = true;                                                                        \
+        }                                                                                         \
+        catch (...)                                                                               \
+        {                                                                                         \
+        }                                                                                         \
+        if (!caught)                                                                              \
+        {                                                                                         \
+            throw TestFailedException("Ожидалось исключение " #exc_type ", но оно не выброшено"); \
+        }                                                                                         \
     } while (0)
-
 
 void TestDynamicArray_Construction()
 {
@@ -2149,7 +2152,6 @@ void RunAllTests()
     TestListSequence_Slice();
 
     std::cout<< "   РЕЗУЛЬТАТЫ ТЕСТИРОВАНИЯ" << std::endl;
-    std::cout << "Пройдено: " << testsPassed << std::endl;
     std::cout << "Не пройдено: " << testsFailed << std::endl;
     std::cout << "Всего: " << (testsPassed + testsFailed) << std::endl;
 

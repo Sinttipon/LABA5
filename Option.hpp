@@ -6,7 +6,7 @@ template <typename T>
 class Option
 {
 private:
-    T value;
+    T value; 
     bool hasValue;
 
 public:

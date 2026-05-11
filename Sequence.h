@@ -30,7 +30,7 @@ public:
         {
             return Option<T>(GetFirst());
         }
-        catch (...)
+        catch (const SequenceException &)
         {
             return Option<T>::None();
         }
@@ -42,7 +42,7 @@ public:
         {
             return Option<T>(GetLast());
         }
-        catch (...)
+        catch (const SequenceException &)
         {
             return Option<T>::None();
         }
@@ -54,7 +54,7 @@ public:
         {
             return Option<T>(Get(index));
         }
-        catch (...)
+        catch (const SequenceException &)
         {
             return Option<T>::None();
         }
