@@ -1,27 +1,29 @@
 #pragma once
 #include "Sequence.h"
+#include "DynamicArray.hpp"
 #include "ArraySequence.h"
 #include <stdexcept>
 #include <string>
+#include <cstdint>
 
 class Bit
 {
 private:
-    bool value;
+    uint8_t value;
 
 public:
-    Bit() : value(false) {}
-    explicit Bit(bool v) : value(v) {}
-    Bit(int v) : value(v != 0) {}
+    Bit() : value(0) {}
+    explicit Bit(bool v) : value(v ? 1 : 0) {}
+    Bit(int v) : value(v != 0 ? 1 : 0) {}
 
-    operator bool() const { return value; }
+    operator bool() const { return value != 0; }
     bool operator==(const Bit &other) const { return value == other.value; }
     bool operator!=(const Bit &other) const { return value != other.value; }
 
-    Bit operator&(const Bit &other) const { return Bit(value && other.value); }
-    Bit operator|(const Bit &other) const { return Bit(value || other.value); }
-    Bit operator^(const Bit &other) const { return Bit(value != other.value); }
-    Bit operator~() const { return Bit(!value); }
+    Bit operator&(const Bit &other) const { return Bit(value & other.value); }
+    Bit operator|(const Bit &other) const { return Bit(value | other.value); }
+    Bit operator^(const Bit &other) const { return Bit(value ^ other.value); }
+    Bit operator~() const { return Bit(value ^ 1); }
 
     std::string ToString() const { return value ? "1" : "0"; }
 };
@@ -29,45 +31,76 @@ public:
 class BitSequence : public Sequence<Bit>
 {
 private:
-    DynamicArray<Bit> *bits;
+    DynamicArray<uint8_t> bytes; 
+    size_t bitLength;          
+
+    size_t byteIndex(size_t bitIndex) const { return bitIndex / 8; }
+    size_t bitOffset(size_t bitIndex) const { return bitIndex % 8; }
 
 public:
-    BitSequence() : bits(new DynamicArray<Bit>()) {}
-    BitSequence(const bool *arr, size_t count) : bits(new DynamicArray<Bit>(count))
-    {
-        for (size_t i = 0; i < count; ++i)
-            bits->Set(i, Bit(arr[i]));
-    }
-    BitSequence(const BitSequence &other) : bits(new DynamicArray<Bit>(*other.bits)) {}
+    BitSequence() : bitLength(0) {}
 
-    ~BitSequence() override { delete bits; }
+    BitSequence(const bool *arr, size_t count) : bitLength(count)
+    {
+        size_t byteCount = (count + 7) / 8;
+        bytes.Resize(byteCount);
+        for (size_t i = 0; i < byteCount; ++i)
+            bytes.Set(i, 0);
+        for (size_t i = 0; i < count; ++i)
+            if (arr[i])
+                bytes[byteIndex(i)] |= (1 << bitOffset(i));
+    }
+
+    BitSequence(const BitSequence &other) : bytes(other.bytes), bitLength(other.bitLength) {}
+
+    ~BitSequence() override {}
 
     Bit GetFirst() const override
     {
-        if (bits->GetSize() == 0)
+        if (bitLength == 0)
             throw IndexOutOfRange(0, 0, "GetFirst on empty BitSequence");
-        return bits->Get(0);
+        return Get(0);
     }
 
     Bit GetLast() const override
     {
-        if (bits->GetSize() == 0)
+        if (bitLength == 0)
             throw IndexOutOfRange(0, 0, "GetLast on empty BitSequence");
-        return bits->Get(bits->GetSize() - 1);
+        return Get(bitLength - 1);
     }
 
-    Bit Get(size_t index) const override { return bits->Get(index); }
-    size_t GetLength() const override { return bits->GetSize(); }
+    Bit Get(size_t index) const override
+    {
+        if (index >= bitLength)
+            throw IndexOutOfRange(index, bitLength, "BitSequence::Get");
+        size_t bi = byteIndex(index);
+        size_t bo = bitOffset(index);
+        return Bit((bytes[bi] >> bo) & 1);
+    }
+
+    size_t GetLength() const override { return bitLength; }
+
+    void Set(size_t index, Bit value)
+    {
+        if (index >= bitLength)
+            throw IndexOutOfRange(index, bitLength, "BitSequence::Set");
+        size_t bi = byteIndex(index);
+        size_t bo = bitOffset(index);
+        if (value)
+            bytes[bi] |= (1 << bo);
+        else
+            bytes[bi] &= ~(1 << bo);
+    }
 
     Sequence<Bit> *GetSubsequence(size_t startIndex, size_t endIndex) const override
     {
-        if (startIndex > endIndex || endIndex >= bits->GetSize())
-            throw IndexOutOfRange(startIndex, bits->GetSize(), "BitSequence::GetSubsequence");
+        if (startIndex > endIndex || endIndex >= bitLength)
+            throw IndexOutOfRange(startIndex, bitLength, "BitSequence::GetSubsequence");
 
         size_t subSize = endIndex - startIndex + 1;
         bool *subArr = new bool[subSize];
         for (size_t i = 0; i < subSize; ++i)
-            subArr[i] = bits->Get(startIndex + i);
+            subArr[i] = Get(startIndex + i);
         Sequence<Bit> *result = new BitSequence(subArr, subSize);
         delete[] subArr;
         return result;
@@ -76,32 +109,42 @@ public:
     Sequence<Bit> *Append(const Bit &item) const override
     {
         BitSequence *copy = new BitSequence(*this);
-        copy->bits->Resize(copy->bits->GetSize() + 1);
-        copy->bits->Set(copy->bits->GetSize() - 1, item);
+        size_t oldLen = copy->bitLength;
+        copy->bitLength++;
+        size_t newByteCount = (copy->bitLength + 7) / 8;
+        if (newByteCount > copy->bytes.GetSize())
+            copy->bytes.Resize(newByteCount);
+        copy->Set(oldLen, item);
         return copy;
     }
 
     Sequence<Bit> *Prepend(const Bit &item) const override
     {
         BitSequence *copy = new BitSequence(*this);
-        size_t oldSize = copy->bits->GetSize();
-        copy->bits->Resize(oldSize + 1);
-        for (size_t i = oldSize; i > 0; --i)
-            copy->bits->Set(i, copy->bits->Get(i - 1));
-        copy->bits->Set(0, item);
+        size_t oldLen = copy->bitLength;
+        copy->bitLength++;
+        size_t newByteCount = (copy->bitLength + 7) / 8;
+        if (newByteCount > copy->bytes.GetSize())
+            copy->bytes.Resize(newByteCount);
+        for (size_t i = copy->bitLength - 1; i > 0; --i)
+            copy->Set(i, copy->Get(i - 1));
+        copy->Set(0, item);
         return copy;
     }
 
     Sequence<Bit> *InsertAt(const Bit &item, size_t index) const override
     {
-        if (index > bits->GetSize())
-            throw IndexOutOfRange(index, bits->GetSize() + 1, "BitSequence::InsertAt");
+        if (index > bitLength)
+            throw IndexOutOfRange(index, bitLength + 1, "BitSequence::InsertAt");
         BitSequence *copy = new BitSequence(*this);
-        size_t oldSize = copy->bits->GetSize();
-        copy->bits->Resize(oldSize + 1);
-        for (size_t i = oldSize; i > index; --i)
-            copy->bits->Set(i, copy->bits->Get(i - 1));
-        copy->bits->Set(index, item);
+        size_t oldLen = copy->bitLength;
+        copy->bitLength++;
+        size_t newByteCount = (copy->bitLength + 7) / 8;
+        if (newByteCount > copy->bytes.GetSize())
+            copy->bytes.Resize(newByteCount);
+        for (size_t i = copy->bitLength - 1; i > index; --i)
+            copy->Set(i, copy->Get(i - 1));
+        copy->Set(index, item);
         return copy;
     }
 
@@ -110,37 +153,36 @@ public:
         if (!other)
             return new BitSequence(*this);
         BitSequence *result = new BitSequence(*this);
-        size_t oldSize = result->bits->GetSize();
+        size_t oldLen = result->bitLength;
         size_t otherLen = other->GetLength();
-        result->bits->Resize(oldSize + otherLen);
+        result->bitLength = oldLen + otherLen;
+        size_t newByteCount = (result->bitLength + 7) / 8;
+        if (newByteCount > result->bytes.GetSize())
+            result->bytes.Resize(newByteCount);
         for (size_t i = 0; i < otherLen; ++i)
-            result->bits->Set(oldSize + i, other->Get(i));
+            result->Set(oldLen + i, other->Get(i));
         return result;
     }
 
     Sequence<Bit> *Where(std::function<bool(const Bit &)> predicate) const override
     {
-        DynamicArray<Bit> *temp = new DynamicArray<Bit>();
-        for (size_t i = 0; i < bits->GetSize(); ++i)
-        {
-            if (predicate(bits->Get(i)))
-            {
-                temp->Resize(temp->GetSize() + 1);
-                temp->Set(temp->GetSize() - 1, bits->Get(i));
-            }
-        }
-        BitSequence *result = new BitSequence();
-        delete result->bits;
-        result->bits = temp;
+        bool *temp = new bool[bitLength];
+        size_t count = 0;
+        for (size_t i = 0; i < bitLength; ++i)
+            if (predicate(Get(i)))
+                temp[count++] = Get(i);
+        BitSequence *result = new BitSequence(temp, count);
+        delete[] temp;
         return result;
     }
+
     template <typename TOut>
     Sequence<TOut> *Map(std::function<TOut(const Bit &)> func) const
     {
-        size_t len = bits->GetSize();
+        size_t len = bitLength;
         TOut *newArr = new TOut[len];
         for (size_t i = 0; i < len; ++i)
-            newArr[i] = func(bits->Get(i));
+            newArr[i] = func(Get(i));
         Sequence<TOut> *res = new MutableArraySequence<TOut>(newArr, len);
         delete[] newArr;
         return res;
@@ -150,74 +192,59 @@ public:
     TAcc Reduce(std::function<TAcc(const TAcc &, const Bit &)> func, const TAcc &init) const
     {
         TAcc acc = init;
-        for (size_t i = 0; i < bits->GetSize(); ++i)
-            acc = func(acc, bits->Get(i));
+        for (size_t i = 0; i < bitLength; ++i)
+            acc = func(acc, Get(i));
         return acc;
     }
 
     BitSequence *And(const BitSequence &other) const
     {
-        size_t minLen = bits->GetSize() < other.bits->GetSize() ? bits->GetSize() : other.bits->GetSize();
-        BitSequence *result = new BitSequence();
+        size_t minLen = bitLength < other.bitLength ? bitLength : other.bitLength;
+        bool *tmp = new bool[minLen];
         for (size_t i = 0; i < minLen; ++i)
-        {
-            Bit b = bits->Get(i) & other.bits->Get(i);
-            result->bits->Resize(result->bits->GetSize() + 1);
-            result->bits->Set(result->bits->GetSize() - 1, b);
-        }
+            tmp[i] = Get(i) & other.Get(i);
+        BitSequence *result = new BitSequence(tmp, minLen);
+        delete[] tmp;
         return result;
     }
 
     BitSequence *Or(const BitSequence &other) const
     {
-        size_t minLen = bits->GetSize() < other.bits->GetSize() ? bits->GetSize() : other.bits->GetSize();
-        BitSequence *result = new BitSequence();
+        size_t minLen = bitLength < other.bitLength ? bitLength : other.bitLength;
+        bool *tmp = new bool[minLen];
         for (size_t i = 0; i < minLen; ++i)
-        {
-            Bit b = bits->Get(i) | other.bits->Get(i);
-            result->bits->Resize(result->bits->GetSize() + 1);
-            result->bits->Set(result->bits->GetSize() - 1, b);
-        }
+            tmp[i] = Get(i) | other.Get(i);
+        BitSequence *result = new BitSequence(tmp, minLen);
+        delete[] tmp;
         return result;
     }
 
     BitSequence *Xor(const BitSequence &other) const
     {
-        size_t minLen = bits->GetSize() < other.bits->GetSize() ? bits->GetSize() : other.bits->GetSize();
-        BitSequence *result = new BitSequence();
+        size_t minLen = bitLength < other.bitLength ? bitLength : other.bitLength;
+        bool *tmp = new bool[minLen];
         for (size_t i = 0; i < minLen; ++i)
-        {
-            Bit b = bits->Get(i) ^ other.bits->Get(i);
-            result->bits->Resize(result->bits->GetSize() + 1);
-            result->bits->Set(result->bits->GetSize() - 1, b);
-        }
+            tmp[i] = Get(i) ^ other.Get(i);
+        BitSequence *result = new BitSequence(tmp, minLen);
+        delete[] tmp;
         return result;
     }
 
     BitSequence *Not() const
     {
-        BitSequence *result = new BitSequence();
-        for (size_t i = 0; i < bits->GetSize(); ++i)
-        {
-            Bit b = ~bits->Get(i);
-            result->bits->Resize(result->bits->GetSize() + 1);
-            result->bits->Set(result->bits->GetSize() - 1, b);
-        }
+        bool *tmp = new bool[bitLength];
+        for (size_t i = 0; i < bitLength; ++i)
+            tmp[i] = ~Get(i);
+        BitSequence *result = new BitSequence(tmp, bitLength);
+        delete[] tmp;
         return result;
     }
 
     std::string ToString() const
     {
         std::string s;
-        for (size_t i = 0; i < bits->GetSize(); ++i)
-            s += bits->Get(i).ToString();
+        for (size_t i = 0; i < bitLength; ++i)
+            s += Get(i).ToString();
         return s;
-    }
-
-    void Set(size_t index, Bit value)
-    {
-        if (index >= bits->GetSize())
-            throw IndexOutOfRange(index, bits->GetSize(), "BitSequence::Set");
-        bits->Set(index, value);
     }
 };

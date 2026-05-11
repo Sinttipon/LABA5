@@ -12,60 +12,46 @@ template <typename T>
 class BaseArraySequence : public Sequence<T>
 {
 protected:
-    DynamicArray<T> *items;
+    DynamicArray<T> items;
 
-    BaseArraySequence() : items(new DynamicArray<T>()) {}
-    BaseArraySequence(T *itemsArr, size_t count) : items(new DynamicArray<T>(itemsArr, count)) {}
-    BaseArraySequence(const DynamicArray<T> &arr) : items(new DynamicArray<T>(arr)) {}
-    BaseArraySequence(const BaseArraySequence<T> &other) : items(new DynamicArray<T>(*other.items)) {}
-
-    ~BaseArraySequence() override
-    {
-        delete items;
-    }
+    BaseArraySequence() {}
+    BaseArraySequence(T *itemsArr, size_t count) : items(itemsArr, count) {}
+    BaseArraySequence(const DynamicArray<T> &arr) : items(arr) {}
+    BaseArraySequence(const BaseArraySequence<T> &other) : items(other.items) {}
 
 public:
     T GetFirst() const override
     {
-        if (items->GetSize() == 0)
+        if (items.GetSize() == 0)
             throw IndexOutOfRange(0, 0, "GetFirst on empty ArraySequence");
-        return items->Get(0);
+        return items.Get(0);
     }
 
     T GetLast() const override
     {
-        if (items->GetSize() == 0)
+        if (items.GetSize() == 0)
             throw IndexOutOfRange(0, 0, "GetLast on empty ArraySequence");
-        return items->Get(items->GetSize() - 1);
+        return items.Get(items.GetSize() - 1);
     }
 
-    T Get(size_t index) const override { return items->Get(index); }
-    size_t GetLength() const override { return items->GetSize(); }
+    T Get(size_t index) const override { return items.Get(index); }
+    size_t GetLength() const override { return items.GetSize(); }
 
     Sequence<T> *GetSubsequence(size_t startIndex, size_t endIndex) const override
     {
-        if (startIndex > endIndex || endIndex >= items->GetSize())
-        {
-            throw IndexOutOfRange(startIndex, items->GetSize(), "ArraySequence::GetSubsequence");
-        }
+        if (startIndex > endIndex || endIndex >= items.GetSize())
+            throw IndexOutOfRange(startIndex, items.GetSize(), "ArraySequence::GetSubsequence");
 
         size_t subSize = endIndex - startIndex + 1;
         T *subArr = new T[subSize];
         for (size_t i = 0; i < subSize; ++i)
-        {
-            subArr[i] = items->Get(startIndex + i);
-        }
+            subArr[i] = items.Get(startIndex + i);
 
         Sequence<T> *result;
-
         if (dynamic_cast<const MutableArraySequence<T> *>(this))
-        {
             result = new MutableArraySequence<T>(subArr, subSize);
-        }
         else
-        {
             result = new ImmutableArraySequence<T>(subArr, subSize);
-        }
 
         delete[] subArr;
         return result;
@@ -93,28 +79,22 @@ public:
 
     Sequence<T> *Where(std::function<bool(const T &)> predicate) const override
     {
-        DynamicArray<T> *temp = new DynamicArray<T>();
+        DynamicArray<T> temp;
         for (size_t i = 0; i < GetLength(); ++i)
         {
             if (predicate(Get(i)))
             {
-                temp->Resize(temp->GetSize() + 1);
-                temp->Set(temp->GetSize() - 1, Get(i));
+                temp.Resize(temp.GetSize() + 1);
+                temp.Set(temp.GetSize() - 1, Get(i));
             }
         }
 
         Sequence<T> *result;
-
         if (dynamic_cast<const MutableArraySequence<T> *>(this))
-        {
-            result = new MutableArraySequence<T>(*temp);
-        }
+            result = new MutableArraySequence<T>(temp);
         else
-        {
-            result = new ImmutableArraySequence<T>(*temp);
-        }
+            result = new ImmutableArraySequence<T>(temp);
 
-        delete temp;
         return result;
     }
 
@@ -181,8 +161,8 @@ public:
 
     void AppendInternal2(const T &item)
     {
-        items->Resize(items->GetSize() + 1);
-        items->Set(items->GetSize() - 1, item);
+        items.Resize(items.GetSize() + 1);
+        items.Set(items.GetSize() - 1, item);
     }
 
     void AppendInternal2(Sequence<T> *seq)
@@ -201,13 +181,9 @@ public:
 
         Sequence<TOut> *res;
         if (dynamic_cast<const MutableArraySequence<T> *>(this))
-        {
             res = new MutableArraySequence<TOut>(newArr, len);
-        }
         else
-        {
             res = new ImmutableArraySequence<TOut>(newArr, len);
-        }
 
         delete[] newArr;
         return res;
@@ -225,28 +201,28 @@ public:
 protected:
     BaseArraySequence<T> *AppendInternal(const T &item)
     {
-        items->Resize(items->GetSize() + 1);
-        items->Set(items->GetSize() - 1, item);
+        items.Resize(items.GetSize() + 1);
+        items.Set(items.GetSize() - 1, item);
         return this;
     }
 
     BaseArraySequence<T> *PrependInternal(const T &item)
     {
-        items->Resize(items->GetSize() + 1);
-        for (size_t i = items->GetSize() - 1; i > 0; --i)
-            items->Set(i, items->Get(i - 1));
-        items->Set(0, item);
+        items.Resize(items.GetSize() + 1);
+        for (size_t i = items.GetSize() - 1; i > 0; --i)
+            items.Set(i, items.Get(i - 1));
+        items.Set(0, item);
         return this;
     }
 
     BaseArraySequence<T> *InsertAtInternal(const T &item, size_t index)
     {
-        if (index > items->GetSize())
-            throw IndexOutOfRange(index, items->GetSize() + 1, "ArraySequence::InsertAt");
-        items->Resize(items->GetSize() + 1);
-        for (size_t i = items->GetSize() - 1; i > index; --i)
-            items->Set(i, items->Get(i - 1));
-        items->Set(index, item);
+        if (index > items.GetSize())
+            throw IndexOutOfRange(index, items.GetSize() + 1, "ArraySequence::InsertAt");
+        items.Resize(items.GetSize() + 1);
+        for (size_t i = items.GetSize() - 1; i > index; --i)
+            items.Set(i, items.Get(i - 1));
+        items.Set(index, item);
         return this;
     }
 
@@ -255,10 +231,10 @@ protected:
         if (!other)
             return this;
         size_t otherLen = other->GetLength();
-        size_t startLen = items->GetSize();
-        items->Resize(startLen + otherLen);
+        size_t startLen = items.GetSize();
+        items.Resize(startLen + otherLen);
         for (size_t i = 0; i < otherLen; ++i)
-            items->Set(startLen + i, other->Get(i));
+            items.Set(startLen + i, other->Get(i));
         return this;
     }
 
