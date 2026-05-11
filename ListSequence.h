@@ -98,7 +98,7 @@ public:
 
     Sequence<Sequence<T> *> *Split(std::function<bool(const T &)> isSeparator) const
     {
-        MutableListSequence<Sequence<T> *> *result = new MutableListSequence<Sequence<T> *>();
+        MutableArraySequence<Sequence<T> *> *result = new MutableArraySequence<Sequence<T> *>();
         MutableListSequence<T> *current = new MutableListSequence<T>();
 
         for (size_t i = 0; i < GetLength(); ++i)
@@ -108,25 +108,37 @@ public:
             {
                 if (current->GetLength() > 0)
                 {
-                    Sequence<T> **pp = new Sequence<T> *[1];
-                    pp[0] = current;
-                    result->AppendInternal2(pp[0]);
-                    delete[] pp;
+                    T *buf = new T[current->GetLength()];
+                    for (size_t j = 0; j < current->GetLength(); ++j)
+                        buf[j] = current->Get(j);
+                    ImmutableListSequence<T> *part = new ImmutableListSequence<T>(buf, current->GetLength());
+                    delete[] buf;
+                    Sequence<Sequence<T> *> *tmpRes = result->Append(part);
+                    delete result;
+                    result = static_cast<MutableArraySequence<Sequence<T> *> *>(tmpRes);
+
+                    delete current;
                     current = new MutableListSequence<T>();
                 }
             }
             else
             {
                 Sequence<T> *tmp = current->Append(val);
+                delete current;
                 current = static_cast<MutableListSequence<T> *>(tmp);
             }
         }
         if (current->GetLength() > 0)
         {
-            Sequence<T> **pp = new Sequence<T> *[1];
-            pp[0] = current;
-            result->AppendInternal2(pp[0]);
-            delete[] pp;
+            T *buf = new T[current->GetLength()];
+            for (size_t j = 0; j < current->GetLength(); ++j)
+                buf[j] = current->Get(j);
+            ImmutableListSequence<T> *part = new ImmutableListSequence<T>(buf, current->GetLength());
+            delete[] buf;
+
+            Sequence<Sequence<T> *> *tmpRes = result->Append(part);
+            delete result;
+            result = static_cast<MutableArraySequence<Sequence<T> *> *>(tmpRes);
         }
         else
             delete current;
