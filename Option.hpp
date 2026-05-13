@@ -1,18 +1,81 @@
 #pragma once
 #include <stdexcept>
 #include <string>
+#include <new>
 
 template <typename T>
 class Option
 {
 private:
-    T value; 
+    alignas(T) unsigned char storage[sizeof(T)];
     bool hasValue;
 
-public:
-    Option() : value{}, hasValue(false) {}
+    T *ptr() { return reinterpret_cast<T *>(storage); }
+    const T *ptr() const { return reinterpret_cast<const T *>(storage); }
 
-    explicit Option(const T &val) : value(val), hasValue(true) {}
+    void destroy()
+    {
+        if (hasValue)
+        {
+            ptr()->~T();
+            hasValue = false;
+        }
+    }
+
+public:
+    Option() : hasValue(false) {}
+
+    Option(const T &val) : hasValue(true)
+    {
+        new (storage) T(val);
+    }
+
+    Option(const Option<T> &other) : hasValue(other.hasValue)
+    {
+        if (other.hasValue)
+            new (storage) T(*other.ptr());
+    }
+
+    Option(Option<T> &&other) noexcept : hasValue(other.hasValue)
+    {
+        if (other.hasValue)
+        {
+            new (storage) T(std::move(*other.ptr()));
+            other.destroy();
+        }
+    }
+
+    ~Option()
+    {
+        destroy();
+    }
+
+    Option &operator=(const Option<T> &other)
+    {
+        if (this != &other)
+        {
+            destroy();
+            hasValue = other.hasValue;
+            if (other.hasValue)
+                new (storage) T(*other.ptr());
+        }
+        return *this;
+    }
+
+    Option &operator=(Option<T> &&other) noexcept
+    {
+        if (this != &other)
+        {
+            destroy();
+            hasValue = other.hasValue;
+            if (other.hasValue)
+            {
+                new (storage) T(std::move(*other.ptr()));
+                other.destroy();
+            }
+        }
+        return *this;
+    }
 
     static Option<T> None() { return Option<T>(); }
 
@@ -23,12 +86,12 @@ public:
     {
         if (!hasValue)
             throw std::runtime_error("Option::Get: значение отсутствует (None)");
-        return value;
+        return *ptr();
     }
 
     T GetOrDefault(const T &defaultVal) const
     {
-        return hasValue ? value : defaultVal;
+        return hasValue ? *ptr() : defaultVal;
     }
 
     bool operator==(const Option<T> &other) const
@@ -37,7 +100,7 @@ public:
             return false;
         if (!hasValue)
             return true;
-        return value == other.value;
+        return *ptr() == *other.ptr();
     }
 
     bool operator!=(const Option<T> &other) const
