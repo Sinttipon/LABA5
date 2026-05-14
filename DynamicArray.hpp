@@ -12,7 +12,7 @@ private:
 public:
     DynamicArray() : data{nullptr}, size{0} {}
 
-    explicit DynamicArray(size_t n) : size{n}
+    DynamicArray(size_t n) : size{n}
     {
         if (n == 0)
         {

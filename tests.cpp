@@ -2104,9 +2104,6 @@ void TestListSequence_Slice()
 void RunAllTests()
 {
     std::cout << "tests running" << std::endl;
-    int testsPassed;
-    int testsFailed;
-    testsPassed = 0;
     testsFailed = 0;
 
     TestDynamicArray_Construction();
@@ -2153,8 +2150,6 @@ void RunAllTests()
 
     std::cout<< "   РЕЗУЛЬТАТЫ ТЕСТИРОВАНИЯ" << std::endl;
     std::cout << "Не пройдено: " << testsFailed << std::endl;
-    std::cout << "Всего: " << (testsPassed + testsFailed) << std::endl;
-
     if (testsFailed == 0)
         std::cout << "\nВСЕ ТЕСТЫ ПРОЙДЕНЫ УСПЕШНО!" << std::endl;
     else

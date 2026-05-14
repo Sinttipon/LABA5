@@ -34,7 +34,7 @@ public:
         Node *ptr;
 
     public:
-        explicit Iterator(Node *p) : ptr{p} {}
+        Iterator(Node *p) : ptr{p} {}
 
         T &operator*() const { return ptr->value; }
 
@@ -57,7 +57,7 @@ public:
     };
 
     LinkedList() : head{nullptr}, tail{nullptr} {}
-    explicit LinkedList(const T *items, size_t count) : head{nullptr}, tail{nullptr}
+    LinkedList(const T *items, size_t count) : head{nullptr}, tail{nullptr}
     {
         for (size_t i = 0; i < count; ++i)
         {
@@ -116,13 +116,13 @@ public:
         {
             if (current == nullptr)
             {
-                throw IndexOutOfRange(static_cast<int>(index), static_cast<int>(GetLength()), "Get");
+                throw IndexOutOfRange( (index),  (GetLength()), "Get");
             }
             current = current->next;
         }
         if (current == nullptr)
         {
-            throw IndexOutOfRange(static_cast<int>(index), static_cast<int>(GetLength()), "Get");
+            throw IndexOutOfRange( (index),  (GetLength()), "Get");
         }
         return current->value;
     }
@@ -133,11 +133,11 @@ public:
         for (size_t i = 0; i < index; ++i)
         {
             if (current == nullptr)
-                throw IndexOutOfRange(static_cast<int>(index), static_cast<int>(GetLength()), "operator[]");
+                throw IndexOutOfRange( (index),  (GetLength()), "operator[]");
             current = current->next;
         }
         if (current == nullptr)
-            throw IndexOutOfRange(static_cast<int>(index), static_cast<int>(GetLength()), "operator[]");
+            throw IndexOutOfRange( (index),  (GetLength()), "operator[]");
         return current->value;
     }
 
@@ -147,11 +147,11 @@ public:
         for (size_t i = 0; i < index; ++i)
         {
             if (current == nullptr)
-                throw IndexOutOfRange(static_cast<int>(index), static_cast<int>(GetLength()), "operator[] const");
+                throw IndexOutOfRange( (index),  (GetLength()), "operator[] const");
             current = current->next;
         }
         if (current == nullptr)
-            throw IndexOutOfRange(static_cast<int>(index), static_cast<int>(GetLength()), "operator[] const");
+            throw IndexOutOfRange( (index),  (GetLength()), "operator[] const");
         return current->value;
     }
 
@@ -200,7 +200,7 @@ public:
         size_t len = GetLength();
         if (index > len)
         {
-            throw IndexOutOfRange(static_cast<int>(index), static_cast<int>(len) + 1, "InsertAt");
+            throw IndexOutOfRange( (index),  (len) + 1, "InsertAt");
         }
 
         if (index == 0)
@@ -230,7 +230,7 @@ public:
         size_t len = GetLength();
         if (startIndex > endIndex || endIndex >= len)
         {
-            throw IndexOutOfRange(static_cast<int>(startIndex), static_cast<int>(len), "GetSubList");
+            throw IndexOutOfRange( (startIndex),  (len), "GetSubList");
         }
 
         LinkedList *result = new LinkedList();

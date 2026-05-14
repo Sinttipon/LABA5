@@ -13,7 +13,7 @@ private:
 
 public:
     Bit() : value(0) {}
-    explicit Bit(bool v) : value(v ? 1 : 0) {}
+    Bit(bool v) : value(v ? 1 : 0) {}
     Bit(int v) : value(v != 0 ? 1 : 0) {}
 
     operator bool() const { return value != 0; }
