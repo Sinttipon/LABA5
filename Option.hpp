@@ -7,7 +7,7 @@ template <typename T>
 class Option
 {
 private:
-    alignas(T) unsigned char storage[sizeof(T)];
+    unsigned char storage[sizeof(T)];
     bool hasValue;
 
     T *ptr() { return reinterpret_cast<T *>(storage); }
